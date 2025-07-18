@@ -1,7 +1,11 @@
 import math
+from enum import unique
 
 from flask import Flask, render_template, request, redirect, url_for,flash
 import os
+
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '<KEY>'
@@ -9,7 +13,16 @@ app.config['SECRET_KEY'] = '<KEY>'
 IMAGE_FOLDER = os.path.join('static', 'images')
 app.config['IMAGE_FOLDER'] = IMAGE_FOLDER
 app.config['IMAGES_PER_PAGE'] = 6
+app.config['SECRET_KEY'] = 'secret_key'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+db = SQLAlchemy(app)
+
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True,nullable=False)
+    password = db.Column(db.String(100),nullable=False)
 @app.route('/')
 def index():
     return redirect(url_for('login'))
@@ -19,13 +32,31 @@ def login():
     if request.method == 'GET':
         return render_template("login.html")
     elif request.method == 'POST':
+        action = request.form['action']
         username = request.form['username']
         password = request.form['password']
-        if username == 'admin' and password == '123456':
-            return redirect(url_for('gallery'))
-        else:
-            flash('账号密码错误','danger')
-            return redirect(url_for('gallery'))
+        if action == '登录':
+            user = Post.query.filter_by(username=username).first()
+            if user and (username == user.username and password == user.password):
+                return redirect(url_for('gallery'))
+            else:
+                flash('账号密码错误','danger')
+                return redirect(url_for('login'))
+
+        elif action == '注册':
+            existing_user = Post.query.filter_by(username=username).first()
+
+            if existing_user:
+                flash('该用户名已被注册，请换一个', 'warning')
+                return redirect(url_for('login'))
+
+            new_user = Post(username=username, password=password)
+
+            db.session.add(new_user)
+            db.session.commit()
+
+            flash('注册成功！现在可以登录了', 'success')
+            return redirect(url_for('login'))
 
 @app.route('/gallery')
 def gallery():

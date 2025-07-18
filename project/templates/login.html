@@ -24,17 +24,18 @@
                     <input id="password" name="password" class="form-control" type="password" placeholder="密码">
                 </div>
 
+
                 <div class="row">
                     <div class="col-md-6">
-                        <input type="submit" class="btn btn-primary btn-block" value="注册">
+                        <input type="submit" class="btn btn-primary btn-block" name="action" value="注册">
                     </div>
                     <div class="col-md-6">
-                        <input type="submit" class="btn btn-primary btn-block" value="登录">
+                        <input type="submit" class="btn btn-primary btn-block" name="action" value="登录">
                     </div>
                 </div>
             </form>
 
-            {% with messages = get_flashed_messages(with_categories = True) %}
+            {% with messages = get_flashed_messages(with_categories=True) %}
                 {% if messages %}
                     {% for category, message in messages %}
                         <div class="alert alert-{{ category }}" style="text-align: center; margin-top: 10px;">
