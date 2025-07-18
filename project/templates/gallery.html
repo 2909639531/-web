@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>画廊</title>
+    <link rel="stylesheet" href="static/bootstrap/css/bootstrap.min.css">
+</head>
+<body>
+    <!--以下是导航栏-->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container">
+            <div class="row">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="#">我的ai画廊</a>
+                </div>
+
+                <div class="col-md-offset-2 collapse navbar-collapse">
+                <ul class="nav navbar-nav">
+                    <li class="active"><a href="{{ url_for("gallery") }}">画廊</a></li>
+                    <li><a href="{{ url_for('upload') }}">上传</a></li>
+                    <li><a href="{{ url_for('mange') }}">管理</a></li>
+                </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div style="margin-top: 100px"></div>
+        <!--以下是图片展示-->
+        <div class="container">
+            <div class="row">
+                {% for image in images  %}
+                    <div class="col-md-4 ">
+                        <img src="/static/images/{{image}}" alt="{{image}}" class="img-responsive img-rounded img-thumbnail">
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 以下是上下页切换-->
+        <div class="container">
+            <div class="row">
+
+                <div class="col-md-4">
+                    {% if page > 1 %}
+                        <a href="{{ url_for('gallery', page=page - 1) }}" style="text-decoration: none;" class="btn btn-success">上一页</a>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4 text-center">
+                    <span style="margin-top: 10px;">第 {{ page }} / {{ total_pages }} 页</span>
+                </div>
+
+                <div class="col-md-4 text-right">
+                    {% if page < total_pages %}
+                        <a href="{{ url_for('gallery', page=page + 1) }}" style="text-decoration: none;" class="btn btn-success">下一页</a>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+
+</body>
+</html>
