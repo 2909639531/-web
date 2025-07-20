@@ -13,7 +13,7 @@
             <div class="row">
                 {% for image in images  %}
                     <div class="col-md-4 ">
-                        <img src="/static/images/{{image}}" alt="{{image}}" class="img-responsive img-rounded img-thumbnail">
+                        <img src="{{ url_for('static',filename='images/' + image.filename) }}" alt="{{image.filename}}" class="img-responsive img-rounded img-thumbnail">
                     </div>
                 {% endfor %}
             </div>

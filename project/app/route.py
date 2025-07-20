@@ -56,7 +56,8 @@ def login():
 @login_required_factory
 def gallery():
 
-    images_total = sorted(os.listdir(app.config['IMAGE_FOLDER']))
+    images_total = Image.query.order_by(Image.upload_data.desc()).all()
+
     images_total_numbers = len(images_total)
     total_pages = math.ceil(float(images_total_numbers) / app.config['IMAGES_PER_PAGE'])
     page = request.args.get('page',1,type=int)
@@ -66,7 +67,7 @@ def gallery():
 
     return render_template(
         'gallery.html',
-        images=paginated_images,
+        images=images_total,
         page=page,
         total_pages=total_pages
     )
@@ -96,12 +97,19 @@ def upload():
 @login_required_factory
 def mange():
     if request.method == 'GET':
-        return render_template("mange.html",images=sorted(os.listdir(app.config['IMAGE_FOLDER'])))
+        return render_template("mange.html",images=Image.query.order_by(Image.upload_data.desc()).all())
     elif request.method == 'POST':
         delete_image = request.form['image_to_delete']
 
         deleted_file_path = os.path.join(app.config['IMAGE_FOLDER'], delete_image)
         os.remove(deleted_file_path)
+
+
+        image_to_delete = Image.query.filter_by(filename=delete_image).first()
+
+        if image_to_delete:
+            db.session.delete(image_to_delete)
+            db.session.commit()
 
         flash(f'{delete_image}已被删除','success')
 

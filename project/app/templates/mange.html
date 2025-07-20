@@ -34,8 +34,8 @@
                     <tbody>
                     {% for image in images %}
                         <tr>
-                        <td><img src="/static/images/{{ image }}" alt="略缩图" class="img-thumbnail" width="100"></td>
-                        <td>{{ image }}</td>
+                        <td><img src="{{ url_for('static',filename='images/' + image.filename) }}" alt="略缩图" class="img-thumbnail" width="100"></td>
+                        <td>{{ image.filename }}</td>
                         <td>
                             <form action="{{ url_for('mange') }}" method="post">
                                 <input type="hidden" name="image_to_delete" value="{{ image }}">
