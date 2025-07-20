@@ -1,0 +1,7 @@
+{% macro nav_link(endpoint, text) %}
+    <li {% if request.endpoint == endpoint %} class="active" {% endif %}>
+        <a href="{{ url_for(endpoint) }}">{{ text }}</a>
+    </li>
+{% endmacro %}
+
+<!--我还是介绍一下吧，万一以后看不懂，以上的是为了实现 当前界面的对应的导航栏变成 ‘ active ’ 样式 -->

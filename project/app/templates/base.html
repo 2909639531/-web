@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%;">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}我的ai画廊{% endblock %}</title>
+    <link rel="stylesheet" href="static/bootstrap/css/bootstrap.min.css">
+</head>
+<body style="height: 100%;">
+
+    <!--导入宏-->
+    {% from '_macros.html' import nav_link %}
+
+    <!--通用部分开始-->
+    <!--以下是导航栏-->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container">
+            <div class="row">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="#">我的ai画廊</a>
+                </div>
+
+                <div class="col-md-offset-2 collapse navbar-collapse">
+                <ul class="nav navbar-nav">
+                    {{ nav_link('gallery','画廊') }}
+                    {{ nav_link('upload','上传') }}
+                    {{ nav_link('mange','管理') }}
+                    {{ nav_link('user','用户') }}
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="{{ url_for('logout') }}" class="btn btn-danger" >退出登录</a></li>
+                </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!--通用部分结束-->
+    {% block body %}<h1>这一部分放置内容<br>所以你看到我就代表出错了</h1>{% endblock %}
+
+    {% include 'footer.html' %}
+
+
+</body>
+</html>
