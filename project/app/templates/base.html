@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}我的ai画廊{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url('static',filename = 'bootstrap/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static',filename = 'bootstrap/css/bootstrap.min.css') }}">
     <script src="{{ url_for('static',filename = 'jquery-3.7.1.min.js') }}"></script>
     <script src="{{ url_for('static',filename = 'bootstrap/js/bootstrap.min.js') }}"></script>
 </head>
@@ -39,7 +39,50 @@
     <!--通用部分结束-->
     {% block body %}<h1>这一部分放置内容<br>所以你看到我就代表出错了</h1>{% endblock %}
 
+    <!--以下是模态框-->
+    <div class="modal fade" id="imageModal">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">图片详细</h4>
+                </div>
+
+                <div class="modal-body text-center">
+                    <img src="" id="modalImage" class="img-responsive" style="max-height: 80vh;" alt="放大图">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关掉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {% include 'footer.html' %}
+
+    <script>
+        // 因为我们要用 jQuery，所以最好还是用 jQuery 的方式来等待页面加载
+        $(document).ready(function() {
+
+            // 用 jQuery 的方式找到所有 class 是 .img-thumbnail 的图片
+            // 并给它们绑定点击事件
+            $('.img-thumbnail').on('click', function() {
+
+                // 1. 获取被点击图片的 src
+                // $(this) 就是被点击的那个图片的 jQuery 对象
+                var imgSrc = $(this).attr('src');
+
+                // 2. 找到模态框里的大图，并把 src 换掉
+                $('#modalImage').attr('src', imgSrc);
+
+                // 3. 【关键】用 Bootstrap 3 + jQuery 的方式来显示模态框
+                // 这行代码的意思是：“找到 id 是 imageModal 的元素，然后调用它的 modal 功能，并执行 'show' 命令”
+                $('#imageModal').modal('show');
+            });
+        });
+    </script>
+
 
 
 </body>

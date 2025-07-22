@@ -23,6 +23,16 @@
 
                             <input type="submit" value="上传" style="margin-top: 30px;">
 
+                            {% with messages = get_flashed_messages(with_categories=True) %}
+                                {% if messages %}
+                                    {% for category,message in messages %}
+                                        <div class="alert alert-{{ category }}" style="margin-top: 10px;">
+                                            {{ message }}
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endwith %}
+
                         </div>
 
                     </form>

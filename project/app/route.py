@@ -85,6 +85,10 @@ def upload():
 
 
             return redirect(url_for('upload'))
+
+        else:
+            flash('输入文件和文件名', 'warning')
+            return redirect(url_for('upload'))
     else:
         return render_template('upload.html')
 
