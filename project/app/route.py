@@ -5,6 +5,7 @@ from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for,session,flash
 
 from app import app,db
+from app.forms import RegisterForm, LoginForm
 from app.models import User,Image
 
 def login_required_factory(original_function):
@@ -21,36 +22,30 @@ def index():
 
 @app.route('/login',methods=['GET','POST'])
 def login():
-    if request.method == 'GET':
-        return render_template("login.html")
-    elif request.method == 'POST':
-        action = request.form['action']
-        username = request.form['username']
-        password = request.form['password']
-        if action == '登录':
-            user = User.query.filter_by(username=username).first()
-            if user and user.password == password:
-                session['username'] = user.username
-                flash(f'欢迎回来, {user.username}!', 'success')
-                return redirect(url_for('gallery'))
-            else:
-                flash('账号密码错误','danger')
-                return redirect(url_for('login'))
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user and user.password == form.password.data:
+            session['username'] = user.username
+            return redirect(url_for('gallery'))
+        else:
+            flash('账号或密码错误','warning')
+    return render_template("login.html",form=form)
 
-        elif action == '注册':
-            existing_user = User.query.filter_by(username=username).first()
-
-            if existing_user:
-                flash('该用户名已被注册，请换一个', 'warning')
-                return redirect(url_for('login'))
-
-            new_user = User(username=username, password=password)
-
+@app.route('/register',methods=['GET','POST'])
+def register():
+    form = RegisterForm()
+    if form.validate_on_submit():
+        existing_user = User.query.filter_by(username=form.username.data).first()
+        if existing_user:
+            flash('改用户名已经存在了', 'warning')
+        else:
+            new_user = User(username=form.username.data, password=form.password.data)
             db.session.add(new_user)
             db.session.commit()
-
-            flash('注册成功！现在可以登录了', 'success')
+            flash('注册成功！现在可以登录了。', 'success')
             return redirect(url_for('login'))
+    return render_template('register.html',form=form)
 
 @app.route('/gallery')
 @login_required_factory
@@ -67,7 +62,7 @@ def gallery():
 
     return render_template(
         'gallery.html',
-        images=images_total,
+        images=paginated_images,
         page=page,
         total_pages=total_pages
     )

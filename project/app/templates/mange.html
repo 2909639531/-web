@@ -38,7 +38,7 @@
                         <td>{{ image.filename }}</td>
                         <td>
                             <form action="{{ url_for('mange') }}" method="post">
-                                <input type="hidden" name="image_to_delete" value="{{ image }}">
+                                <input type="hidden" name="image_to_delete" value="{{ image.filename }}">
                                 <input type="submit" class="btn btn-danger" value="delete">
                             </form>
                         </td>
