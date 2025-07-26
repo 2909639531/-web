@@ -2,7 +2,7 @@ import math
 import os
 from functools import wraps
 
-from flask import Flask, render_template, request, redirect, url_for,session,flash
+from flask import Flask, render_template, request, redirect, url_for,session,flash,jsonify
 
 from app import app,db
 from app.forms import RegisterForm, LoginForm
@@ -13,6 +13,15 @@ def login_required_factory(original_function):
     def wrapper_function(*a,**kw):
         if 'username' not in session:
             flash('登录才能访问此界面','warning')
+            return redirect(url_for('login'))
+        return original_function(*a,**kw)
+    return wrapper_function
+
+def manger_required_factory(original_function):
+    @wraps(original_function)
+    def wrapper_function(*a,**kw):
+        if session.get('role') != 'admin':
+            flash('管理员才能访问此页面','warning')
             return redirect(url_for('login'))
         return original_function(*a,**kw)
     return wrapper_function
@@ -27,6 +36,7 @@ def login():
         user = User.query.filter_by(username=form.username.data).first()
         if user and user.password == form.password.data:
             session['username'] = user.username
+            session['role'] = user.role
             return redirect(url_for('gallery'))
         else:
             flash('账号或密码错误','warning')
@@ -94,25 +104,30 @@ def upload():
 
 @app.route('/mange',methods=['GET','POST'] )
 @login_required_factory
+@manger_required_factory
 def mange():
-    if request.method == 'GET':
-        return render_template("mange.html",images=Image.query.order_by(Image.upload_data.desc()).all())
-    elif request.method == 'POST':
-        delete_image = request.form['image_to_delete']
-
-        deleted_file_path = os.path.join(app.config['IMAGE_FOLDER'], delete_image)
-        os.remove(deleted_file_path)
+    return render_template("mange.html",images=Image.query.order_by(Image.upload_data.desc()).all())
 
 
-        image_to_delete = Image.query.filter_by(filename=delete_image).first()
-
+@app.route('/delete-image',methods=['POST'] )
+@login_required_factory
+def delete_image():
+    filename = request.form.get('filename')
+    if not filename:
+        return jsonify({'status':'error','message':'请求者未包含文件名'})
+    try:
+        delete_file_path = os.path.join(app.config['IMAGE_FOLDER'], filename)
+        if os.path.exists(delete_file_path):
+            os.remove(delete_file_path)
+        image_to_delete = Image.query.filter_by(filename=filename).first()
         if image_to_delete:
             db.session.delete(image_to_delete)
             db.session.commit()
+        return jsonify({'status':'success'})
+    except:
+        db.session.rollback()
+        return jsonify({'status':'error','message':'<UNK>'})
 
-        flash(f'{delete_image}已被删除','success')
-
-        return redirect(url_for('mange'))
 
 @app.route('/user',methods=['GET','POST'] )
 @login_required_factory

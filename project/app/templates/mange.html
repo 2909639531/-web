@@ -33,19 +33,35 @@
 
                     <tbody>
                     {% for image in images %}
-                        <tr>
+                        <tr id="image-row-{{ image.filename.replace('.','-') }}">
                         <td><img src="{{ url_for('static',filename='images/' + image.filename) }}" alt="略缩图" class="img-thumbnail" width="100"></td>
                         <td>{{ image.filename }}</td>
                         <td>
-                            <form action="{{ url_for('mange') }}" method="post">
-                                <input type="hidden" name="image_to_delete" value="{{ image.filename }}">
-                                <input type="submit" class="btn btn-danger" value="delete">
-                            </form>
+                           <button class="btn btn-danger" data-filename="{{ image.filename }}">删除</button>
                         </td>
                     {% endfor %}
                 </table>
             </div>
         </div>
     </div>
+
+    <script>
+    $(document).ready(function(){
+        $('.btn.btn-danger').click(function(){
+            let filenameToDelete = $(this).data("filename");
+            if (confirm("你确定要删除"+filenameToDelete+"吗？")) {
+                $.post("{{ url_for('delete_image') }}",{filename:filenameToDelete},function(response){
+                    if (response.status == 'success'){
+                        let rowId = '#image-row-' + filenameToDelete.replace('.','-');
+                        $(rowId).fadeOut('slow', function(){
+                            $(this).remove();})
+                        } else {
+                            alert('删除失败'+response.message)
+                    }
+                });
+            }
+        });
+    });
+    </script>
 
 {% endblock %}

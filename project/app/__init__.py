@@ -1,6 +1,7 @@
 # app/__init__.py
 import os
 from flask import Flask
+from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -17,5 +18,6 @@ app.config['IMAGE_FOLDER'] = os.path.join(app.static_folder, 'images')
 
 # --- 初始化插件 ---
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 from app import route, models
