@@ -1,0 +1,135 @@
+<!--我们首先引入模板，以后我可能会引入宏macro-->
+{% extends 'base.html' %}
+
+<!--替换标题-->
+{% block title %}画廊{% endblock %}
+
+<!--替换正文-->
+{% block body %}
+
+    <style>
+    /* 选中我们统一的容器 */
+    .actions-container {
+        margin-top: 5px; /* 让按钮组和上面的图片之间有点距离 */
+    }
+
+    /* 同时选中“喜欢”和“不喜欢”的按钮 */
+    .like_btn, .dislike_btn {
+        background-color: transparent; /* 把背景色设为透明 */
+        border: none;              /* 去掉边框 */
+        padding: 0 5px;            /* 去掉一些内边距，让它更紧凑 */
+    }
+
+    /* 选中“不喜欢”的按钮 */
+    .dislike_btn {
+        margin-left: 15px; /* 在“不喜欢”按钮的左边，增加一些外边距，把它和“喜欢”隔开 */
+    }
+
+    /* 选中图标，让它的大小统一 */
+    .like_icon, .dislike_icon {
+        width: 18px;
+        height: 18px;
+    }
+</style>
+
+    <div style="margin-top: 100px"></div>
+        <!--以下是图片展示-->
+        <div class="container-fluid">
+            <div class="waterfall">
+                {% for image in images  %}
+                    <div class="brick">
+                        <img src="{{ url_for('static',filename='images/' + image.filename) }}" alt="{{image.filename}}" class="img-responsive img-rounded img-thumbnail">
+                        <div class="text-center actions-container">
+
+                            <!-- 喜欢按钮和数字 -->
+                            <button class="btn btn-default btn-sm like_btn" data-filename="{{image.filename}}">
+                                <img src="{{ url_for('static',filename='svg/like.svg') }}" alt="点赞图标" class="like_icon">
+                            </button>
+                            <span class="like_count">{{ image.likes }}</span>
+
+                            <!-- 不喜欢按钮和数字 -->
+                            <button class="btn btn-default btn-sm dislike_btn" data-filename="{{image.filename}}">
+                                <img src="{{ url_for('static',filename='svg/dislike.svg') }}" alt="讨厌图标" class="dislike_icon">
+                            </button>
+                            <span class="dislike_count">{{ image.dislikes }}</span>
+
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 以下是上下页切换-->
+    <div class="text-center">
+        <nav aria-label="Page navigation">
+            <!-- 页码列表 -->
+            <ul class="pagination" style="display: inline-block; vertical-align: middle; margin: 20px 0;">
+                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        {% if pagination.page == page_num %}
+                            <li class="active"><a href="#">{{ page_num }}</a></li>
+                        {% else %}
+                            <li><a href="{{ url_for('gallery', page=page_num) }}">{{ page_num }}</a></li>
+                        {% endif %}
+                    {% else %}
+                        <li class="disabled"><a href="#">&hellip;</a></li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+
+            <!-- 跳转表单 -->
+            <form id="jump-form" style="display: inline-block; vertical-align: middle; margin-left: 20px;">
+                <input type="number" id="jump-page-input" min="1" max="{{ pagination.pages }}" style="width: 70px; display: inline-block;" class="form-control">
+                <button type="submit" class="btn btn-default">跳转</button>
+            </form>
+        </nav>
+    </div>
+
+    <!-- 让跳转功能生效的JavaScript代码 -->
+    <script>
+        document.getElementById('jump-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var page = document.getElementById('jump-page-input').value;
+            if (page) {
+                window.location.href = "{{ url_for('gallery') }}?page=" + page;
+            }
+        });
+    </script>
+
+    <!--好了，现在我来实现点赞的逻辑-->
+    <script>
+        $(document).ready(function() {
+            $('.like_btn').on('click', function() {
+                let likeButton = $(this);
+                let filename = likeButton.data('filename');
+
+                $.post("{{ url_for('like_image') }}",{filename:filename},function(response) {
+                    if (response.status === 'success') {
+                        likeButton.siblings('.like_count').text(response.new_count);
+                        likeButton.find('.like_icon').attr('src', '{{ url_for('static',filename='svg/like_up.svg') }}');
+                        likeButton.prop('disabled', true);
+                    }
+                    else {
+                        alert('点赞失败: ' + response.message);
+                    }
+                })
+            })
+
+            $('.dislike_btn').on('click', function() {
+                let dislikeButton = $(this);
+                let filename = dislikeButton.data('filename');
+                $.post("{{ url_for('dislike_image') }}",{filename:filename},function(response) {
+                    if (response.status === 'success') {
+                        dislikeButton.siblings('.dislike_count').text(response.new_count);
+                        dislikeButton.find('.dislike_icon').attr('src', '{{ url_for('static',filename='svg/dislike_down.svg') }}')
+                        dislikeButton.prop('disabled', true);
+                    }
+                })
+            })
+        })
+    </script>
+
+
+{% endblock %}
+
+

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}
+	注册页面
+{% endblock %}
+
+{% block body %}
+    <div class="container" style="margin-top: 100px;">
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3">
+                <div class="panel-default">
+                    <div class="panel-heading">注册面板</div>
+                    <div class="panel-body">
+                        <form method="POST" action="/register">
+                            {{ form.hidden_tag() }}
+
+                            <div class="form-group">
+                                {{ form.username.label(style="width:80px;",class="text-center") }}
+                                {{ form.username(class="form-control",placeholder="输入用户名") }}
+                                {% for error in form.username.errors %}
+                                    <div style="color: red;">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.password.label(style="width:80px",class="text-center") }}
+                                {{ form.password(class="form-control",placeholder="输入密码") }}
+                                {% for error in form.password.errors %}
+                                    <div style="color: red;">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.confirm_password.label(style="width:80px",class="text-center") }}
+                                {{ form.confirm_password(class="form-control",placeholder="再次输入密码") }}
+                                {% for error in form.confirm_password.errors %}
+                                    <div style="color: red;">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.submit(class="btn btn-primary btn-block") }}
+                            </div>
+
+                            {% with messages = get_flashed_messages(with_categories=True) %}
+                                {% if messages %}
+                                     {% for category, message in messages %}
+                                        <div class="alert alert-{{ category }}" style="text-align: center; margin-top: 10px;">
+                                        {{ message }}
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                             {% endwith %}
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

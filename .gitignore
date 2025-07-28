@@ -1,0 +1,6 @@
+*.db
+app/static/images
+.venv/
+venv/
+*.png
+migrations

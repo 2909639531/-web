@@ -1,0 +1,44 @@
+<!--我们首先引入模板，以后我可能会引入宏macro-->
+{% extends 'base.html' %}
+
+<!--替换标题-->
+{% block title %}上传页面{% endblock %}
+
+<!--替换正文-->
+{% block body %}
+    <div class="container" style="padding-top: 100px;">
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3">
+                <div class="panel panel-default" style="margin-top: 100px;">
+                    <form action="/upload" method="post" enctype="multipart/form-data">
+
+
+                        <div class="panel-body" >
+                            <label for="image_file">上传文件</label>
+
+                            <input type="file" name="image_file">
+
+                            <label for="image_name" style="margin-top: 30px">图像名字</label>
+                            <input class="input-group" id="image_name" name="image_name" type='text' placeholder="输入你的图像名字">
+
+                            <input type="submit" value="上传" style="margin-top: 30px;">
+
+                            {% with messages = get_flashed_messages(with_categories=True) %}
+                                {% if messages %}
+                                    {% for category,message in messages %}
+                                        <div class="alert alert-{{ category }}" style="margin-top: 10px;">
+                                            {{ message }}
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endwith %}
+
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
