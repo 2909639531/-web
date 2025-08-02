@@ -1,9 +1,12 @@
 import math
 import os
 from functools import wraps
+
+import flask
+from sqlalchemy.sql.functions import current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from flask import Flask, render_template, request, redirect, url_for,session,flash,jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, current_app
 
 from app import app,db
 from app.forms import RegisterForm, LoginForm
@@ -71,36 +74,86 @@ def gallery():
     )
     images = pagination.items
 
+    current_user = User.query.filter_by(username=session['username']).first()
+
+    like_image = {image.filename for image in current_user.liked_images}
+    dislike_image = {image.filename for image in current_user.disliked_images}
+
     return render_template('gallery.html',
                            images=images,
-                           pagination=pagination)
+                           pagination=pagination,
+                           like_image=like_image,
+                           dislike_image=dislike_image,)
 
 
 @app.route('/upload',methods=['GET','POST'] )
 @login_required_factory
 def upload():
     if request.method == 'POST':
-        uploaded_file = request.files.get('image_file')
-        if not(uploaded_file):
-            flash('请选择文件','warning')
-            return redirect(url_for('upload'))
-        enter_filename = request.form.get('image_name')
-        filename = enter_filename if enter_filename else uploaded_file.filename
-        existing_image = Image.query.filter_by(filename=filename).first()
-        if existing_image:
-            flash(f'文件名“{filename}”已经存在了，换个名字', 'warning')
-            return redirect(url_for('upload'))
-        uploaded_file.save(os.path.join(app.config['IMAGE_FOLDER'],filename))
-
+        uploaded_files = request.files.getlist('images[]')
+        if not uploaded_files or not uploaded_files[0].filename:
+            return jsonify({'status':'error','message':'没有选择文件'}),400
         current_user = User.query.filter_by(username=session['username']).first()
-        new_image = Image(filename=filename, user=current_user)
-        db.session.add(new_image)
-        db.session.commit()
-        flash(f'上传完毕！图片 "{filename}" 已保存。', 'success')
+        successful_uploads = 0
+        failed_uploads = []
+        for uploaded_file in uploaded_files:
+            filename = uploaded_file.filename
+            existing_image = Image.query.filter_by(filename=filename).first()
+            if existing_image:
+                failed_uploads.append(f'"{filename}"已经存在')
+                continue
+            try:
+                uploaded_file.save(os.path.join(app.config['IMAGE_FOLDER'], filename))
 
-        return redirect(url_for('upload'))
+                new_image = Image(filename=filename,user=current_user)
+                db.session.add(new_image)
+
+                successful_uploads += 1
+            except Exception as e:
+                failed_uploads.append(f'"{filename}"保存失败{str(e)}')
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'status':'error','message':f'数据库提交失败:{str(e)}'}), 500
+        if successful_uploads > 0 and not failed_uploads:
+            message = f'{successful_uploads}张照片！'
+            return jsonify({'status':'success','message':message})
+        elif successful_uploads > 0 and failed_uploads:
+            message = f'成功上传 {successful_uploads} 张图片，但有 {len(failed_uploads)} 张失败: {", ".join(failed_uploads)}'
+            return jsonify({'status': 'partial', 'message': message})
+        else:
+            message = f'所有图片上传失败: {", ".join(failed_uploads)}'
+            return jsonify({'status': 'error', 'message': message}), 400
+
+    # GET 请求保持不变，只是渲染页面
     else:
         return render_template('upload.html')
+
+#由于我放弃了单文件上传的格式，采用了更高级的队列上传格式，所以旧版本就直接放弃了。
+# def upload():
+#     if request.method == 'POST':
+#         uploaded_file = request.files.get('image_file')
+#         if not(uploaded_file):
+#             flash('请选择文件','warning')
+#             return redirect(url_for('upload'))
+#         enter_filename = request.form.get('image_name')
+#         filename = enter_filename if enter_filename else uploaded_file.filename
+#         existing_image = Image.query.filter_by(filename=filename).first()
+#         if existing_image:
+#             flash(f'文件名“{filename}”已经存在了，换个名字', 'warning')
+#             return redirect(url_for('upload'))
+#         uploaded_file.save(os.path.join(app.config['IMAGE_FOLDER'],filename))
+#
+#         current_user = User.query.filter_by(username=session['username']).first()
+#         new_image = Image(filename=filename, user=current_user)
+#         db.session.add(new_image)
+#         db.session.commit()
+#         flash(f'上传完毕！图片 "{filename}" 已保存。', 'success')
+#
+#         return redirect(url_for('upload'))
+#     else:
+#         return render_template('upload.html')
 
 @app.route('/mange',methods=['GET','POST'] )
 @login_required_factory
@@ -152,8 +205,30 @@ def delete_image():
 @login_required_factory
 def user():
     username_from_user = session['username']
-    current_user_id = User.query.filter_by(username=username_from_user).first()
-    return render_template('user.html',user=current_user_id)
+    if request.method == 'GET':
+        current_user_id = User.query.filter_by(username=username_from_user).first()
+        return render_template('user.html',current_user=current_user_id, my_head_image=username_from_user + ".png")
+    elif request.method == 'POST':
+        if 'head_image' not in request.files:
+            flash('未找到上传文件','warning')
+            return redirect(url_for('user'))
+
+        head_image = request.files.get('head_image')
+
+        if head_image.filename == '':
+            return redirect(request.url)
+
+        _,file_extension = os.path.splitext(request.files['head_image'].filename)
+        new_filename = username_from_user + file_extension
+        save_folder = os.path.join(current_app.root_path, 'static','head_images')
+        os.makedirs(save_folder, exist_ok=True)
+        save_path = os.path.join(save_folder, new_filename)
+        head_image.save(save_path)
+        return redirect(url_for('user'))
+
+        # head_image = request.files.get('head_image')
+        # head_image.save('/static/head_images'+".png",username_from_user)
+        # return redirect(url_for('user'))
 
 @app.route('/like_image',methods=['POST'] )
 @login_required_factory

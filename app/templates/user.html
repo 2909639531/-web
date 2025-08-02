@@ -1,12 +1,27 @@
 {% extends 'base.html' %}
 
 {% block title %}用户{% endblock %}
+{% block body_class %} background-color:#f6f6f6 {% endblock %}
+
 
 {% block body %}
+
+
+
 <div style="height: 30vh; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
         <!-- 这里将来可以放用户的头像、名字等信息 -->
+    {% with messages = get_flashed_messages(with_categories=True)  %}
+        {% if messages %}
+            {% for message,category in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
       <div class="container" style="padding-top: 50px;">
-            <!-- 先留空 -->
+            <img src="static/head_images/{{ my_head_image }}" alt="" class="img-thumbnail rounded" style="margin-top: 50px;width: 100px;height: 100px;">
+            <button class="btn-primary" id="upload_user_head_image_button_show">上传头像</button>
       </div>
 </div>
 
@@ -15,28 +30,58 @@
         <div class="row">
             <div class="col-md-12">
                 <div class="jumbotron">
-                    <h1>{{ user.username }}</h1>
-                    <table class="table table-striped table-bordered table-hover">
-                        <thead>
-                            <tr>
-                                <th style="padding: 15px;">略缩图</th>
-                                <th style="padding: 15px;">图片名</th>
-                                <th style="padding: 15px;">上传时间</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for image in user.images %}
-                            <tr>
-                                <td style="vertical-align: middle; padding: 15px;"><img src="/static/images/{{ image.filename }}" alt="{{ image.filename }}" class="img-thumbnail" width="100"></td>
-                                <td style="vertical-align: middle; padding: 15px;">{{ image.filename }}</td>
-                                <td style="vertical-align: middle; padding: 15px;">{{ image.upload_data.strftime('%Y-%m-%d %H:%M') }}</td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="h3">用户名：{{ current_user.username }}</div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th style="padding: 15px;">略缩图</th>
+                                    <th style="padding: 15px;">图片名</th>
+                                    <th style="padding: 15px;">上传时间</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for image in current_user.images %}
+                                <tr>
+                                    <td style="vertical-align: middle; padding: 15px;"><img src="/static/images/{{ image.filename }}" alt="{{ image.filename }}" class="img-thumbnail" width="100"></td>
+                                    <td style="vertical-align: middle; padding: 15px;">{{ image.filename }}</td>
+                                    <td style="vertical-align: middle; padding: 15px;">{{ image.upload_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="upload_user_head_image_modal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header text-center">
+                <h2 class="modal-title">上传头像</h2>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{{url_for('user')}}" enctype="multipart/form-data">
+                    <input type="file" name="head_image" class="form-control-file">
+                    <button type="submit" class="btn btn-primary form-control" id="upload_user_head_image_button" style="margin-top: 50px">上传图片</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $('#upload_user_head_image_button_show').on('click', function () {
+            $('#upload_user_head_image_modal').modal('show');
+            $('#upload_user_head_image_button').on('click', function () {
+                $('#upload_user_head_image_modal').modal('hide');
+            })
+        })
+    })
+</script>
 {% endblock %}
+

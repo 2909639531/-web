@@ -1,0 +1,115 @@
+$(document).ready(function() {
+    // 用一个数组来存储用户选择的、真正要上传的文件对象
+    let fileQueue = [];
+
+    // 1. 监听文件选择输入框的 change 事件
+    $('#image-input').on('change', function(event) {
+        const files = event.target.files; // 获取用户选择的所有文件
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+
+            // 检查文件名是否已在队列中，防止重复添加
+            if (fileQueue.some(f => f.name === file.name)) {
+                console.log(`文件 ${file.name} 已经存在于队列中，已跳过。`);
+                continue;
+            }
+
+            // 将文件对象添加到我们的队列数组中
+            fileQueue.push(file);
+
+            // 使用 FileReader API 来生成预览图
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // 这是预览图的 Data URL
+                const previewSrc = e.target.result;
+
+                // 创建预览卡片的 HTML
+                const previewCard = `
+                    <div class="col-md-3 col-sm-4" id="file-card-${file.name}">
+                        <div class="thumbnail">
+                            <img src="${previewSrc}" alt="预览" style="height: 120px; object-fit: cover;">
+                            <div class="caption text-center">
+                                <p style="word-wrap: break-word; font-size: 12px; height: 30px; overflow: hidden;">${file.name}</p>
+                                <button class="btn btn-xs btn-danger delete-btn" data-filename="${file.name}">
+                                    <span class="glyphicon glyphicon-trash"></span> 删除
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                // 将创建的卡片添加到预览区域
+                $('#preview-queue').append(previewCard);
+            };
+            // 读取文件内容
+            reader.readAsDataURL(file);
+        }
+        updateQueueCount();
+        // 清空 input 的值，这样用户下次选择相同文件时仍能触发 change 事件
+        $(this).val('');
+    });
+
+    // 2. 使用事件委托来处理删除按钮的点击事件
+    $('#preview-queue').on('click', '.delete-btn', function() {
+        const filename = $(this).data('filename');
+
+        // 从我们的文件队列数组中移除文件
+        fileQueue = fileQueue.filter(f => f.name !== filename);
+
+        // 从页面上移除对应的预览卡片
+        $(`#file-card-${filename}`).remove();
+
+        updateQueueCount();
+    });
+
+    // 3. 监听“全部上传”按钮的点击事件
+    $('#upload-all-btn').on('click', function() {
+        if (fileQueue.length === 0) {
+            alert('请先选择要上传的图片！');
+            return;
+        }
+
+        // 创建 FormData 对象，用于打包文件
+        const formData = new FormData();
+        fileQueue.forEach(file => {
+            // 关键：'images[]' 这个名字后面的 [] 很重要，Flask会把它解析成一个列表
+            formData.append('images[]', file);
+        });
+
+        // 使用 AJAX 发送请求
+        $.ajax({
+            url: '{{ url_for("upload") }}',
+            type: 'POST',
+            data: formData,
+            processData: false, // 必须为 false，告诉jQuery不要处理数据
+            contentType: false, // 必须为 false，让浏览器自动设置正确的Content-Type
+            beforeSend: function() {
+                // 上传前，禁用按钮并显示提示
+                $('#upload-all-btn').prop('disabled', true).html('上传中...');
+                $('#upload-status').html('<div class="alert alert-info">正在上传，请稍候...</div>');
+            },
+            success: function(response) {
+                // 上传成功后的处理
+                $('#upload-status').html(`<div class="alert alert-success">${response.message}</div>`);
+                // 清空队列
+                $('#preview-queue').empty();
+                fileQueue = [];
+                updateQueueCount();
+            },
+            error: function(xhr) {
+                // 上传失败后的处理
+                const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : '上传失败，请检查网络或联系管理员。';
+                $('#upload-status').html(`<div class="alert alert-danger">${errorMsg}</div>`);
+            },
+            complete: function() {
+                // 不论成功失败，都恢复按钮状态
+                $('#upload-all-btn').prop('disabled', false).html('<span class="glyphicon glyphicon-upload"></span> 全部上传');
+            }
+        });
+    });
+
+    // 更新队列计数的辅助函数
+    function updateQueueCount() {
+        $('#queue-count').text(fileQueue.length);
+    }
+});
+</script>

@@ -3,42 +3,153 @@
 
 <!--替换标题-->
 {% block title %}上传页面{% endblock %}
+{% block body_class %} background-color:#f6f6f6 {% endblock %}
+
 
 <!--替换正文-->
 {% block body %}
-    <div class="container" style="padding-top: 100px;">
-        <div class="row">
-            <div class="col-md-6 col-md-offset-3">
-                <div class="panel panel-default" style="margin-top: 100px;">
-                    <form action="/upload" method="post" enctype="multipart/form-data">
 
-
-                        <div class="panel-body" >
-                            <label for="image_file">上传文件</label>
-
-                            <input type="file" name="image_file">
-
-                            <label for="image_name" style="margin-top: 30px">图像名字</label>
-                            <input class="input-group" id="image_name" name="image_name" type='text' placeholder="输入你的图像名字">
-
-                            <input type="submit" value="上传" style="margin-top: 30px;">
-
-                            {% with messages = get_flashed_messages(with_categories=True) %}
-                                {% if messages %}
-                                    {% for category,message in messages %}
-                                        <div class="alert alert-{{ category }}" style="margin-top: 10px;">
-                                            {{ message }}
-                                        </div>
-                                    {% endfor %}
-                                {% endif %}
-                            {% endwith %}
-
-                        </div>
-
-                    </form>
+<div class="container" style="margin-top: 100px;">
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <div class="panel panel-default">
+                <div class="panel-heading"><h3 class="panel-title">文件上传</h3></div>
+                <div class="panel-body">
+                    <input type="file" id="image-input" multiple accept="image/*" style="display: none">
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('image-input').click()">
+                        <span class="glyphicon glyphicon-plus"></span>选择图片
+                    </button>
+                    <p class="help-block">可以按住<kbd>Ctrl</kbd>或者<kbd>Shift</kbd>来多选图片</p>
+                    <hr>
+                    <h4>待上传队列(<span id="queue-count">0</span>)</h4>
+                    <div id="preview-queue" class="row" style="margin-top: 20px"></div>
+                    <button type="button" id="upload-all-btn" class="btn btn-primary-lg">
+                        <span class="glyphicon glyphicon-upload"></span> 全部上传
+                    </button>
+                    <div id="upload-status" style="margin-top: 20px"></div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
+<script>
+$(document).ready(function () {
+    let fileQueue = []
+
+    $('#image-input').change(function (event) {
+        const files = event.target.files;
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            if (fileQueue.some(f => f.name === file.name)) {
+                console.log(`文件${file.name}已经在队列中了，已经跳过。}`);
+                continue;
+            }
+            fileQueue.push(file);
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const previewSrc = e.target.result;
+
+            const previewCard = `
+                <div class="col-md-3 col-sm-4" id="file-card-${file.name}">
+                    <div class="thumbnail">
+                        <img src="${previewSrc}" alt="预览" style="height: 120px; object-fit: cover;">
+                        <div class="caption text-center">
+                            <p style="word-wrap: break-word; font-size: 12px; height: 30px; overflow: hidden;">${file.name}</p>
+                            <button class="btn btn-xs btn-danger delete-btn" data-filename="${file.name}">
+                                <span class="glyphicon glyphicon-trash"></span> 删除
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+
+                $('#preview-queue').append(previewCard);
+            };
+            reader.readAsDataURL(file);
+        }
+        updateQueueCount();
+        $(this).val('')
+    });
+    $('#preview-queue').on('click', '.delete-btn',function () {
+        const filename = $(this).data('filename');
+        fileQueue = fileQueue.filter(f => f.name !== filename);
+        $(this).closest('.col-md-3').remove();
+        updateQueueCount();
+    });
+    $('#upload-all-btn').on('click', function () {
+        if (fileQueue.length === 0) {
+            alert('请先选择要上传的图片');
+            return;
+        }
+        const formData = new FormData();
+        fileQueue.forEach(file => {
+            formData.append('images[]', file);
+        });
+        $.ajax({
+            url: '{{url_for("upload")}}',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            beforeSend: function () {
+                $('#upload-all-btn').prop('disabled', true).html('上传中...');
+                $('#upload-status').html('<div class="alert alert-danger">正在上传，请稍等...</div>');
+            },
+            success: function (response) {
+                $('#upload-status').html(`<div class="alert alert-success">${response.message}</div>`);
+                $('#preview-queue').empty();
+                fileQueue = [];
+                updateQueueCount();
+            },
+            error: function (xhr) {
+                const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : '上传失败，请检查网络或者联系管理员';
+                $('#upload-status').html(`<div class="alert alert-danger">${errorMsg}</div>`);
+            },
+            complete: function () {
+                $('#upload-all-btn').prop('disabled', false).html('<span class="glyphicon glyphicon-trash"></span>全部上传');
+            }
+        });
+    });
+    function updateQueueCount() {
+        $('#queue-count').text(fileQueue.length);
+    }
+});
+</script>
+{# 旧代码开始:旧代码使用的是纯html和css的静态文件，提交格式一次只能提交一个。为了实现队列提交和可视化提交，我决定放弃html和css转而使用更高级的js的队列提交模式。 #}
+{#    <div class="container" style="padding-top: 100px;">#}
+{#        <div class="row">#}
+{#            <div class="col-md-6 col-md-offset-3">#}
+{#                <div class="panel panel-default" style="margin-top: 100px;">#}
+{#                    <form action="/upload" method="post" enctype="multipart/form-data">#}
+{##}
+{#                #}
+{#                        <div class="panel-body" >#}
+{#                            <label for="image_file">上传文件</label>#}
+{##}
+{#                            <input type="file" name="image_file">#}
+{##}
+{#                            <label for="image_name" style="margin-top: 30px">图像名字</label>#}
+{#                            <input class="input-group" id="image_name" name="image_name" type='text' placeholder="输入你的图像名字">#}
+{##}
+{#                            <input type="submit" value="上传" style="margin-top: 30px;">#}
+{##}
+{#                            {% with messages = get_flashed_messages(with_categories=True) %}#}
+{#                                {% if messages %}#}
+{#                                    {% for category,message in messages %}#}
+{#                                        <div class="alert alert-{{ category }}" style="margin-top: 10px;">#}
+{#                                            {{ message }}#}
+{#                                        </div>#}
+{#                                    {% endfor %}#}
+{#                                {% endif %}#}
+{#                            {% endwith %}#}
+{##}
+{#                        </div>#}
+{##}
+{#                    </form>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{# 旧代码结束 #}
 {% endblock %}

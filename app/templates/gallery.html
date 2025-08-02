@@ -30,7 +30,14 @@
         width: 18px;
         height: 18px;
     }
+    .disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    }
+
+
 </style>
+{% block body_class %} background-color:#f6f6f6 {% endblock %}
 
     <div style="margin-top: 100px"></div>
         <!--以下是图片展示-->
@@ -38,21 +45,34 @@
             <div class="waterfall">
                 {% for image in images  %}
                     <div class="brick">
-                        <img src="{{ url_for('static',filename='images/' + image.filename) }}" alt="{{image.filename}}" class="img-responsive img-rounded img-thumbnail">
+                        <img src="{{ url_for('static',filename='images/' + image.filename) }}" alt="{{image.filename}}" class="img-fluid img-responsive img-rounded img-thumbnail tran-image">
                         <div class="text-center actions-container">
 
                             <!-- 喜欢按钮和数字 -->
+                            {% if image.filename in like_image %}
+                            <button class="btn btn-default btn-sm like_btn disabled" data-filename="{{image.filename}}">
+                                <img src="{{ url_for('static',filename='svg/like_up.svg') }}" alt="点赞图标" class="like_icon">
+                            </button>
+                            <span class="like_count">{{ image.likes }}</span>
+                            {% else %}
                             <button class="btn btn-default btn-sm like_btn" data-filename="{{image.filename}}">
                                 <img src="{{ url_for('static',filename='svg/like.svg') }}" alt="点赞图标" class="like_icon">
                             </button>
                             <span class="like_count">{{ image.likes }}</span>
+                            {% endif %}
 
                             <!-- 不喜欢按钮和数字 -->
+                            {% if image.filename in dislike_image %}
+                            <button class="btn btn-default btn-sm dislike_btn disabled" data-filename="{{image.filename}}">
+                                <img src="{{ url_for('static',filename='svg/dislike_down.svg') }}" alt="讨厌图标" class="dislike_icon">
+                            </button>
+                            <span class="dislike_count">{{ image.dislikes }}</span>
+                            {% else %}
                             <button class="btn btn-default btn-sm dislike_btn" data-filename="{{image.filename}}">
                                 <img src="{{ url_for('static',filename='svg/dislike.svg') }}" alt="讨厌图标" class="dislike_icon">
                             </button>
                             <span class="dislike_count">{{ image.dislikes }}</span>
-
+                            {% endif %}
                         </div>
                     </div>
                 {% endfor %}
